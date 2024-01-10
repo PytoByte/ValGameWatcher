@@ -32,8 +32,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        val kostil = this
+
         val showingText = mutableStateOf("")
         check(showingText, this)
 
@@ -65,7 +64,7 @@ class MainActivity : ComponentActivity() {
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(text = text.value, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.size(10.dp))
-                Button(onClick = {check(showingText, kostil)})  {
+                Button(onClick = {check(showingText, this@MainActivity)})  {
                     Text(text = "Обновить", textAlign = TextAlign.Center)
                 }
             }

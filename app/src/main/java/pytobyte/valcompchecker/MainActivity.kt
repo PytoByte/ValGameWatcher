@@ -1,14 +1,17 @@
 package pytobyte.littleparser
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -18,14 +21,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.escape.UnicodeEscaper
-import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.net.PercentEscaper
 import org.json.JSONObject
-import pytobyte.valcompchecker.simpleGetRequest
+import pytobyte.valcompchecker.R
+import pytobyte.valcompchecker.getMatches
+import pytobyte.valcompchecker.services.CheckGames
 
 
 class MainActivity : ComponentActivity() {
@@ -35,6 +41,7 @@ class MainActivity : ComponentActivity() {
 
         val showingText = mutableStateOf("")
         check(showingText, this)
+        startService(Intent(this, CheckGames::class.java))
 
 
         setContent{
@@ -48,6 +55,8 @@ class MainActivity : ComponentActivity() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
+                Image(modifier=Modifier.size(100.dp).clip(CircleShape), painter = painterResource(id = R.drawable.img), contentDescription = "appIcon", contentScale = ContentScale.Crop)
+                Spacer(modifier = Modifier.size(20.dp))
                 Text(
                     text = "Competitive games checker",
                     fontWeight = FontWeight.Bold,
@@ -80,25 +89,20 @@ fun check(showingText:MutableState<String>, activity: ComponentActivity) {
         val lastID = sp.getString("lastID", "0")
         val name = sp.getString("name", "Оберон#09KD")
 
-        val basicEscaper: UnicodeEscaper = PercentEscaper("-", false)
-        val encodedName = basicEscaper.escape(name)
-
-        name!!.forEach {
-            Log.d("Thread code", it.code.toString())
-        }
-
         try {
-            val response = simpleGetRequest("https://api.tracker.gg/api/v2/valorant/standard/matches/riot/$encodedName?type=competitive&season=&agent=all&map=all")
+            val response = getMatches(name!!)
             val matches = JSONObject(response).getJSONObject("data").getJSONArray("matches")
 
             firstID = matches.getJSONObject(0).getJSONObject("attributes").getString("id")
 
             if (lastID!=firstID) {
-                var gc = 0;
-                var found = false;
+                var gamesCount = 0
+                var found = false
+                var wins = 0
                 for (i in 0 until matches.length()) {
-                    gc = i
+                    gamesCount = i
                     val curID = matches.getJSONObject(i).getJSONObject("attributes").getString("id")
+                    if (matches.getJSONObject(i).getJSONObject("metadata").getString("result")=="victory") {wins++}
                     if (curID==lastID) {
                         found = true
                         break
@@ -106,9 +110,9 @@ fun check(showingText:MutableState<String>, activity: ComponentActivity) {
                 }
 
                 if (found) {
-                    showingText.value = "Замечена активность!\n${++gc} игр"
+                    showingText.value = "Замечена активность!\n(${++gamesCount} игр\n${((wins/gamesCount)*100)}% побед"
                 } else {
-                    showingText.value = "Замечена активность!\n>20 игр"
+                    showingText.value = "Замечена активность!\n>20 игр\n${((wins / gamesCount) * 100)}% побед"
                 }
                 val editor = sp.edit()
                 editor.putString("lastID", firstID)
@@ -118,6 +122,7 @@ fun check(showingText:MutableState<String>, activity: ComponentActivity) {
             }
         } catch (ex: Exception) {
             showingText.value = "Error $ex"
+            ex.printStackTrace()
         }
     }.start()
 }

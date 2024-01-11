@@ -73,9 +73,9 @@ class CheckGames : Service() {
 
                         if (found) {
                             gamesCount++
-                            showingText = "Замечена активность! (${++gamesCount} игр; ${((wins/gamesCount)*100)}% побед)"
+                            showingText = "Замечена активность! (${++gamesCount} игр; ${(wins*100/gamesCount)}% побед)"
                         } else {
-                            showingText = "Замечена активность! (>20 игр; ${((wins/gamesCount)*100)}% побед)"
+                            showingText = "Замечена активность! (>20 игр; ${(wins*100/gamesCount)}% побед)"
                         }
 
                         SendNotification(showingText)

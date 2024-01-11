@@ -110,9 +110,9 @@ fun check(showingText:MutableState<String>, activity: ComponentActivity) {
                 }
 
                 if (found) {
-                    showingText.value = "Замечена активность!\n(${++gamesCount} игр\n${((wins/gamesCount)*100)}% побед"
+                    showingText.value = "Замечена активность!\n(${++gamesCount} игр\n${(wins*100/gamesCount)}% побед"
                 } else {
-                    showingText.value = "Замечена активность!\n>20 игр\n${((wins / gamesCount) * 100)}% побед"
+                    showingText.value = "Замечена активность!\n>20 игр\n${(wins*100/gamesCount)}% побед"
                 }
                 val editor = sp.edit()
                 editor.putString("lastID", firstID)

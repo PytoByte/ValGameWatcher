@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "pytobyte.valcompchecker"
+    namespace = "pytobyte.valgamewatcher"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "pytobyte.valcompchecker"
+        applicationId = "pytobyte.valgamewatcher"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

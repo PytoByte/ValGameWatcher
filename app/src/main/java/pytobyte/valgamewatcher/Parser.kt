@@ -1,8 +1,8 @@
-package pytobyte.valcompchecker
+package pytobyte.valgamewatcher
 
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.escape.UnicodeEscaper
 import com.google.firebase.crashlytics.buildtools.reloc.com.google.common.net.PercentEscaper
-import pytobyte.valcompchecker.data.Gamemodes
+import pytobyte.valgamewatcher.data.Gamemodes
 import java.net.HttpURLConnection
 import java.net.URL
 

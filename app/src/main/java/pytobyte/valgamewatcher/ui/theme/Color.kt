@@ -1,4 +1,4 @@
-package pytobyte.valcompchecker.ui.theme
+package pytobyte.valgamewatcher.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

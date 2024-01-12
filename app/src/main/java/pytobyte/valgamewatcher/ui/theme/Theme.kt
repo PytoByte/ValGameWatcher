@@ -1,4 +1,4 @@
-package pytobyte.valcompchecker.ui.theme
+package pytobyte.valgamewatcher.ui.theme
 
 import android.app.Activity
 import android.os.Build

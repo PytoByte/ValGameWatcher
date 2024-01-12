@@ -1,4 +1,4 @@
-package pytobyte.valcompchecker.services
+package pytobyte.valgamewatcher.services
 
 import android.Manifest
 import android.app.Service
@@ -17,11 +17,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import pytobyte.valcompchecker.R
-import pytobyte.valcompchecker.data.Gamemodes
-import pytobyte.valcompchecker.encodeString
-import pytobyte.valcompchecker.getMatches
-import pytobyte.valcompchecker.simpleGetRequest
+import pytobyte.valgamewatcher.R
+import pytobyte.valgamewatcher.data.Gamemodes
+import pytobyte.valgamewatcher.encodeString
+import pytobyte.valgamewatcher.getMatches
+import pytobyte.valgamewatcher.simpleGetRequest
 
 class CheckGames : Service() {
 

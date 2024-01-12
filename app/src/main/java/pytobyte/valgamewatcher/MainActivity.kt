@@ -29,12 +29,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONObject
-import pytobyte.valcompchecker.R
-import pytobyte.valcompchecker.data.Gamemodes
-import pytobyte.valcompchecker.encodeString
-import pytobyte.valcompchecker.getMatches
-import pytobyte.valcompchecker.services.CheckGames
-import pytobyte.valcompchecker.simpleGetRequest
+import pytobyte.valgamewatcher.R
+import pytobyte.valgamewatcher.data.Gamemodes
+import pytobyte.valgamewatcher.encodeString
+import pytobyte.valgamewatcher.getMatches
+import pytobyte.valgamewatcher.services.CheckGames
+import pytobyte.valgamewatcher.simpleGetRequest
 
 
 class MainActivity : ComponentActivity() {
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 )
                 Spacer(modifier = Modifier.size(20.dp))
                 Text(
-                    text = "Competitive games checker",
+                    text = getString(R.string.app_name),
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     fontSize = 20.sp

@@ -1,4 +1,4 @@
-package pytobyte.valcompchecker.data
+package pytobyte.valgamewatcher.data
 
 enum class Gamemodes(val type: String, val translate: String) {
     COMPETITIVE("competitive", "Рейтинговая игра"),

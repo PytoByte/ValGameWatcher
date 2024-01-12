@@ -75,8 +75,6 @@ class CheckGames : Service() {
 
                                 if (matches.length() != 0) {
                                     for (i in 0 until matches.length()) {
-                                        gamesCount++
-                                        gamesSummary++
                                         val curID =
                                             matches.getJSONObject(i).getJSONObject("attributes")
                                                 .getString("id")
@@ -89,6 +87,9 @@ class CheckGames : Service() {
                                         if (curID == lastID) {
                                             found = true
                                             break
+                                        } else {
+                                            gamesCount++
+                                            gamesSummary++
                                         }
                                     }
 

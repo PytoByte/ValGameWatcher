@@ -6,19 +6,27 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +43,7 @@ import pytobyte.valgamewatcher.encodeString
 import pytobyte.valgamewatcher.getMatches
 import pytobyte.valgamewatcher.services.CheckGames
 import pytobyte.valgamewatcher.simpleGetRequest
+import pytobyte.valgamewatcher.ui.theme.ValCompCheckerTheme
 
 
 class MainActivity : ComponentActivity() {
@@ -48,42 +57,63 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val text = remember { showingText }
-
             val sp = getSharedPreferences("IDandNAME", MODE_PRIVATE)
             val name = remember { mutableStateOf(sp.getString("name", "Оберон#09KD")!!) }
 
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            var isDarkTheme by remember { mutableStateOf(true) }
+
+            ValCompCheckerTheme(
+                darkTheme = isDarkTheme,
             ) {
-                Image(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape),
-                    painter = painterResource(id = R.drawable.img),
-                    contentDescription = "appIcon",
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.size(20.dp))
-                Text(
-                    text = getString(R.string.app_name),
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    fontSize = 20.sp
-                )
-                Spacer(modifier = Modifier.size(20.dp))
-                TextField(value = name.value, onValueChange = {
-                    name.value = it
-                    val editor = sp.edit()
-                    editor.putString("name", it)
-                    editor.apply()
-                })
-                Spacer(modifier = Modifier.size(10.dp))
-                Text(text = text.value, textAlign = TextAlign.Center)
-                Spacer(modifier = Modifier.size(10.dp))
-                Button(onClick = { check(showingText, this@MainActivity) }) {
-                    Text(text = "Обновить", textAlign = TextAlign.Center)
+                Surface() {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        Button(
+                            modifier = Modifier.padding(5.dp),
+                            onClick = {
+                                isDarkTheme = !isDarkTheme
+                            }
+                        ) {
+                            Text(text = if (isDarkTheme) "Светлая тема" else "Тёмная тема", textAlign = TextAlign.Center)
+                        }
+                    }
+
+
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Image(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape),
+                            painter = painterResource(id = R.drawable.img),
+                            contentDescription = "appIcon",
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.size(20.dp))
+                        Text(
+                            text = getString(R.string.app_name),
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            fontSize = 20.sp
+                        )
+                        Spacer(modifier = Modifier.size(20.dp))
+                        TextField(value = name.value, onValueChange = {
+                            name.value = it
+                            val editor = sp.edit()
+                            editor.putString("name", it)
+                            editor.apply()
+                        })
+                        Spacer(modifier = Modifier.size(10.dp))
+                        Text(text = text.value, textAlign = TextAlign.Center)
+                        Spacer(modifier = Modifier.size(10.dp))
+                        Button(onClick = { check(showingText, this@MainActivity) }) {
+                            Text(text = "Обновить", textAlign = TextAlign.Center)
+                        }
+                    }
                 }
             }
         }
@@ -102,7 +132,7 @@ fun check(showingText: MutableState<String>, activity: ComponentActivity, start:
         var gamesSummary = 0
         var errorsSummary = 0
         var more = false
-        showingText.value = "Проверка.. (это на долго)"
+        showingText.value = "Проверка.. (это не быстро)"
         Gamemodes.values().forEach {
             try {
                 val lastID = sp.getString("${it.name}lastID", "0")!!
@@ -123,7 +153,6 @@ fun check(showingText: MutableState<String>, activity: ComponentActivity, start:
                             sb.appendLine("Замечена активность!")
                             active=true
                         }
-                        showingText.value = "$sb\nЗагрузка.. (это на долго)"
 
                         var gamesCount = 0
                         var found = false
@@ -153,6 +182,10 @@ fun check(showingText: MutableState<String>, activity: ComponentActivity, start:
                             val editor = sp.edit()
                             editor.putString("${it.name}lastID", firstID)
                             editor.apply()
+
+                            showingText.value = "$sb\nЗагрузка.. (это не быстро)"
+
+
                         }
                     }
                 }

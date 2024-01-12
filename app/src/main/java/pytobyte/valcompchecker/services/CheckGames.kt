@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pytobyte.valcompchecker.R
+import pytobyte.valcompchecker.data.Gamemodes
 import pytobyte.valcompchecker.encodeString
 import pytobyte.valcompchecker.getMatches
 import pytobyte.valcompchecker.simpleGetRequest
@@ -31,61 +32,86 @@ class CheckGames : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val sp = getSharedPreferences("IDandNAME", ComponentActivity.MODE_PRIVATE)
-        var lastID = ""
-        var name = ""
-        var showingText = ""
+        val sp = getSharedPreferences("IDsandNAME", ComponentActivity.MODE_PRIVATE)
         var response = ""
 
         serviceScope.launch {
             while (true) {
-                lastID = sp.getString("lastID", "0")!!
-                name = sp.getString("name", "Оберон#09KD")!!
+                delay(1000 * 60 * 60 * 2)
+                val name = sp.getString("name", "Оберон#09KD")!!
+                var more = false
+                var winsSummary = 0
+                var gamesSummary = 0
+                var errorsSummary = 0
+                Gamemodes.values().forEach {
+                    val lastID = sp.getString("${it.name}lastID", "0")!!
 
-                try {
-                    Log.d("Service", "Request")
-                    val tr = Thread {
-                        simpleGetRequest("https://tracker.gg/valorant/profile/riot/${encodeString(name)}/overview?season=all")
-                        Thread.sleep(1000)
-                        response = getMatches(name)
-                    }
-                    tr.start()
-                    withContext(Dispatchers.IO) {
-                        tr.join(1000 * 20)
-                    }
-                    val matches = JSONObject(response).getJSONObject("data").getJSONArray("matches")
+                    try {
+                        Log.d("Service", "Request")
+                        val tr = Thread {
+                            simpleGetRequest("https://tracker.gg/valorant/profile/riot/${encodeString(name)}/overview?season=all&playlist=${it.type}")
+                            Thread.sleep(1000)
+                            response = getMatches(name, it.type)
+                        }
+                        tr.start()
+                        withContext(Dispatchers.IO) {
+                            tr.join(1000 * 20)
+                        }
 
-                    val firstID = matches.getJSONObject(0).getJSONObject("attributes").getString("id")
+                        if (JSONObject(response).isNull("errors")) {
+                            val matches =
+                                JSONObject(response).getJSONObject("data").getJSONArray("matches")
 
-                    if (lastID != firstID) {
-                        var gamesCount = 0;
-                        var wins = 0
-                        var found = false;
-                        for (i in 0 until matches.length()) {
-                            gamesCount = i
-                            val curID = matches.getJSONObject(i).getJSONObject("attributes").getString("id")
-                            if (matches.getJSONObject(i).getJSONObject("metadata").getString("result")=="victory") {wins++}
-                            if (curID == lastID) {
-                                found = true
-                                break
+                            val firstID = if (matches.length()>0) {
+                                matches.getJSONObject(0).getJSONObject("attributes").getString("id")
+                            } else {
+                                lastID
+                            }
+
+                            if (lastID != firstID) {
+                                var gamesCount = 0
+                                var found = false
+                                var wins = 0
+
+                                if (matches.length() != 0) {
+                                    for (i in 0 until matches.length()) {
+                                        gamesCount++
+                                        gamesSummary++
+                                        val curID =
+                                            matches.getJSONObject(i).getJSONObject("attributes")
+                                                .getString("id")
+                                        if (matches.getJSONObject(i).getJSONObject("metadata")
+                                                .getString("result") == "victory"
+                                        ) {
+                                            wins++
+                                            winsSummary++
+                                        }
+                                        if (curID == lastID) {
+                                            found = true
+                                            break
+                                        }
+                                    }
+
+                                    if (!found && gamesCount==20) {
+                                        more = true
+                                    }
+                                }
                             }
                         }
 
-                        if (found) {
-                            gamesCount++
-                            showingText = "Замечена активность! (${++gamesCount} игр; ${(wins*100/gamesCount)}% побед)"
-                        } else {
-                            showingText = "Замечена активность! (>20 игр; ${(wins*100/gamesCount)}% побед)"
-                        }
-
-                        SendNotification(showingText)
+                    } catch (ex: Exception) {
+                        errorsSummary++
+                        ex.printStackTrace()
                     }
-
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
                 }
 
-                delay(1000 * 60 * 60 * 2)
+                if (gamesSummary>0) {
+                    if (more) {
+                        SendNotification("Замечена активность! ($gamesSummary игр; ${(winsSummary * 100 / gamesSummary)}% побед) ($errorsSummary ошибок)")
+                    } else {
+                        SendNotification("Замечена активность! (>$gamesSummary игр; ${(winsSummary * 100 / gamesSummary)}% побед) ($errorsSummary ошибок)")
+                    }
+                }
             }
         }
 

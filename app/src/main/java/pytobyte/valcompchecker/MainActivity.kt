@@ -30,8 +30,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.json.JSONObject
 import pytobyte.valcompchecker.R
+import pytobyte.valcompchecker.data.Gamemodes
+import pytobyte.valcompchecker.encodeString
 import pytobyte.valcompchecker.getMatches
 import pytobyte.valcompchecker.services.CheckGames
+import pytobyte.valcompchecker.simpleGetRequest
 
 
 class MainActivity : ComponentActivity() {
@@ -40,11 +43,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val showingText = mutableStateOf("")
-        check(showingText, this)
-        startService(Intent(this, CheckGames::class.java))
+        check(showingText, this, true)
 
 
-        setContent{
+        setContent {
             val text = remember { showingText }
 
             val sp = getSharedPreferences("IDandNAME", MODE_PRIVATE)
@@ -55,7 +57,14 @@ class MainActivity : ComponentActivity() {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Image(modifier=Modifier.size(100.dp).clip(CircleShape), painter = painterResource(id = R.drawable.img), contentDescription = "appIcon", contentScale = ContentScale.Crop)
+                Image(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape),
+                    painter = painterResource(id = R.drawable.img),
+                    contentDescription = "appIcon",
+                    contentScale = ContentScale.Crop
+                )
                 Spacer(modifier = Modifier.size(20.dp))
                 Text(
                     text = "Competitive games checker",
@@ -73,7 +82,7 @@ class MainActivity : ComponentActivity() {
                 Spacer(modifier = Modifier.size(10.dp))
                 Text(text = text.value, textAlign = TextAlign.Center)
                 Spacer(modifier = Modifier.size(10.dp))
-                Button(onClick = {check(showingText, this@MainActivity)})  {
+                Button(onClick = { check(showingText, this@MainActivity) }) {
                     Text(text = "Обновить", textAlign = TextAlign.Center)
                 }
             }
@@ -81,48 +90,93 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-fun check(showingText:MutableState<String>, activity: ComponentActivity) {
-    Thread{
-        var firstID = "0"
+fun check(showingText: MutableState<String>, activity: ComponentActivity, start: Boolean = false) {
+    Thread {
         Log.d("Thread", "call")
-        val sp = activity.getSharedPreferences("IDandNAME", ComponentActivity.MODE_PRIVATE)
-        val lastID = sp.getString("lastID", "0")
-        val name = sp.getString("name", "Оберон#09KD")
+        val sp = activity.getSharedPreferences("IDsandNAME", ComponentActivity.MODE_PRIVATE)
+        val name = sp.getString("name", "Оберон#09KD")!!
 
-        try {
-            val response = getMatches(name!!)
-            val matches = JSONObject(response).getJSONObject("data").getJSONArray("matches")
+        val sb = StringBuilder()
+        var active = false
+        var winsSummary = 0
+        var gamesSummary = 0
+        var more = false
+        showingText.value = "Проверка.. (это на долго)"
+        Gamemodes.values().forEach {
+            try {
+                val lastID = sp.getString("${it.name}lastID", "0")!!
 
-            firstID = matches.getJSONObject(0).getJSONObject("attributes").getString("id")
+                simpleGetRequest("https://tracker.gg/valorant/profile/riot/${encodeString(name)}/overview?season=all&playlist=${it.type}")
+                val response = getMatches(name, it.type)
+                if (JSONObject(response).isNull("errors")) {
+                    val matches = JSONObject(response).getJSONObject("data").getJSONArray("matches")
+                    val firstID = if (matches.length()>0) {
+                        matches.getJSONObject(0).getJSONObject("attributes").getString("id")
+                    } else {
+                        lastID
+                    }
 
-            if (lastID!=firstID) {
-                var gamesCount = 0
-                var found = false
-                var wins = 0
-                for (i in 0 until matches.length()) {
-                    gamesCount = i
-                    val curID = matches.getJSONObject(i).getJSONObject("attributes").getString("id")
-                    if (matches.getJSONObject(i).getJSONObject("metadata").getString("result")=="victory") {wins++}
-                    if (curID==lastID) {
-                        found = true
-                        break
+
+                    if (lastID != firstID) {
+                        if (!active) {
+                            sb.appendLine("Замечена активность!")
+                            active=true
+                        }
+                        showingText.value = "$sb\nЗагрузка.. (это на долго)"
+
+                        var gamesCount = 0
+                        var found = false
+                        var wins = 0
+                        if (matches.length() != 0) {
+                            for (i in 0 until matches.length()) {
+                                gamesCount++
+                                gamesSummary++
+                                val curID =
+                                    matches.getJSONObject(i).getJSONObject("attributes").getString("id")
+                                if (matches.getJSONObject(i).getJSONObject("metadata")
+                                        .getString("result") == "victory"
+                                ) {
+                                    wins++
+                                    winsSummary++
+                                }
+                                if (curID == lastID) {
+                                    found = true
+                                    break
+                                }
+                            }
+
+                            if (found || gamesCount<20) {
+                                sb.appendLine("${gamesCount} ${it.translate} ${(wins * 100 / gamesCount)}% побед")
+                            } else {
+                                more = true
+                                sb.appendLine(">20 ${it.translate} ${(wins * 100 / gamesCount)}% побед")
+                            }
+                            val editor = sp.edit()
+                            editor.putString("${it.name}lastID", firstID)
+                            editor.apply()
+                        }
                     }
                 }
-
-                if (found) {
-                    showingText.value = "Замечена активность!\n(${++gamesCount} игр\n${(wins*100/gamesCount)}% побед"
-                } else {
-                    showingText.value = "Замечена активность!\n>20 игр\n${(wins*100/gamesCount)}% побед"
-                }
-                val editor = sp.edit()
-                editor.putString("lastID", firstID)
-                editor.apply()
-            } else {
-                showingText.value = "Никаких измененией"
+            } catch (ex: Exception) {
+                sb.appendLine("Error ${ex.message}. Cause ${ex.cause}")
+                ex.printStackTrace()
             }
-        } catch (ex: Exception) {
-            showingText.value = "Error $ex"
-            ex.printStackTrace()
         }
+
+        if (gamesSummary==0) {
+            showingText.value = "Никаких измененией"
+        } else {
+            if (more) {
+                sb.appendLine("\n>${gamesSummary} Суммарно ${(winsSummary * 100 / gamesSummary)}% побед")
+            } else {
+                sb.appendLine("\n${gamesSummary} Суммарно ${(winsSummary * 100 / gamesSummary)}% побед")
+            }
+            showingText.value = sb.toString()
+        }
+
+        if (start) {
+            activity.startService(Intent(activity, CheckGames::class.java))
+        }
+
     }.start()
 }

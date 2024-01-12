@@ -130,20 +130,17 @@ fun check(showingText: MutableState<String>, activity: ComponentActivity, start:
                         var wins = 0
                         if (matches.length() != 0) {
                             for (i in 0 until matches.length()) {
-                                val curID =
-                                    matches.getJSONObject(i).getJSONObject("attributes").getString("id")
-                                if (matches.getJSONObject(i).getJSONObject("metadata")
-                                        .getString("result") == "victory"
-                                ) {
-                                    wins++
-                                    winsSummary++
-                                }
+                                val curID = matches.getJSONObject(i).getJSONObject("attributes").getString("id")
                                 if (curID == lastID) {
                                     found = true
                                     break
                                 } else {
                                     gamesCount++
                                     gamesSummary++
+                                }
+                                if (matches.getJSONObject(i).getJSONObject("metadata").getString("result") == "victory") {
+                                    wins++
+                                    winsSummary++
                                 }
                             }
 

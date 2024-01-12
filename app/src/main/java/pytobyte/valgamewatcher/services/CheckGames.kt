@@ -78,18 +78,18 @@ class CheckGames : Service() {
                                         val curID =
                                             matches.getJSONObject(i).getJSONObject("attributes")
                                                 .getString("id")
-                                        if (matches.getJSONObject(i).getJSONObject("metadata")
-                                                .getString("result") == "victory"
-                                        ) {
-                                            wins++
-                                            winsSummary++
-                                        }
                                         if (curID == lastID) {
                                             found = true
                                             break
                                         } else {
                                             gamesCount++
                                             gamesSummary++
+                                        }
+                                        if (matches.getJSONObject(i).getJSONObject("metadata")
+                                                .getString("result") == "victory"
+                                        ) {
+                                            wins++
+                                            winsSummary++
                                         }
                                     }
 

@@ -51,7 +51,7 @@ class CheckGames : Service() {
                     }
                     tr.start()
                     withContext(Dispatchers.IO) {
-                        tr.join(1000 * 16)
+                        tr.join(1000 * 20)
                     }
                     val matches = JSONObject(response).getJSONObject("data").getJSONArray("matches")
 
@@ -85,7 +85,7 @@ class CheckGames : Service() {
                     ex.printStackTrace()
                 }
 
-                delay(1000 * 60)
+                delay(1000 * 60 * 60 * 2)
             }
         }
 

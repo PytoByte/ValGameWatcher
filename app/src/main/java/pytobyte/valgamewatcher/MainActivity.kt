@@ -100,6 +100,7 @@ fun check(showingText: MutableState<String>, activity: ComponentActivity, start:
         var active = false
         var winsSummary = 0
         var gamesSummary = 0
+        var errorsSummary = 0
         var more = false
         showingText.value = "Проверка.. (это на долго)"
         Gamemodes.values().forEach {
@@ -159,18 +160,19 @@ fun check(showingText: MutableState<String>, activity: ComponentActivity, start:
                     }
                 }
             } catch (ex: Exception) {
+                errorsSummary++
                 sb.appendLine("Error ${ex.message}. Cause ${ex.cause}")
                 ex.printStackTrace()
             }
         }
 
         if (gamesSummary==0) {
-            showingText.value = "Никаких измененией"
+            showingText.value = "Никаких измененией (${errorsSummary} ошибок)"
         } else {
             if (more) {
-                sb.appendLine("\n>${gamesSummary} Суммарно ${(winsSummary * 100 / gamesSummary)}% побед")
+                sb.appendLine("\n>${gamesSummary} Суммарно ${(winsSummary * 100 / gamesSummary)}% побед (${errorsSummary} ошибок)")
             } else {
-                sb.appendLine("\n${gamesSummary} Суммарно ${(winsSummary * 100 / gamesSummary)}% побед")
+                sb.appendLine("\n${gamesSummary} Суммарно ${(winsSummary * 100 / gamesSummary)}% побед (${errorsSummary} ошибок)")
             }
             showingText.value = sb.toString()
         }

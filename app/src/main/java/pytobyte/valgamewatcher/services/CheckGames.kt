@@ -37,7 +37,7 @@ class CheckGames : Service() {
 
         serviceScope.launch {
             while (true) {
-                delay(1000 * 60 * 60 * 2)
+                delay(1000 * 60 * 60)
                 val name = sp.getString("name", "Оберон#09KD")!!
                 var more = false
                 var winsSummary = 0

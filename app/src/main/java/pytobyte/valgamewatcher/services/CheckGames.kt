@@ -32,77 +32,83 @@ class CheckGames : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val sp = getSharedPreferences("IDsandNAME", ComponentActivity.MODE_PRIVATE)
+        val sp = getSharedPreferences("data", ComponentActivity.MODE_PRIVATE)
         var response = ""
+        val checkInterval = sp.getFloat("CheckInterval", 120f)
 
         serviceScope.launch {
             while (true) {
-                delay(1000 * 60 * 60)
+                if (checkInterval==0f) {
+                    break
+                }
+                delay((1000 * 60 * checkInterval).toLong())
                 val name = sp.getString("name", "Оберон#09KD")!!
                 var more = false
                 var winsSummary = 0
                 var gamesSummary = 0
                 var errorsSummary = 0
+
                 Gamemodes.values().forEach {
                     val lastID = sp.getString("${it.name}lastID", "0")!!
 
-                    try {
-                        Log.d("Service", "Request")
-                        val tr = Thread {
-                            simpleGetRequest("https://tracker.gg/valorant/profile/riot/${encodeString(name)}/overview?season=all&playlist=${it.type}")
-                            Thread.sleep(1000)
-                            response = getMatches(name, it.type)
-                        }
-                        tr.start()
-                        withContext(Dispatchers.IO) {
-                            tr.join(1000 * 20)
-                        }
-
-                        if (JSONObject(response).isNull("errors")) {
-                            val matches =
-                                JSONObject(response).getJSONObject("data").getJSONArray("matches")
-
-                            val firstID = if (matches.length()>0) {
-                                matches.getJSONObject(0).getJSONObject("attributes").getString("id")
-                            } else {
-                                lastID
+                    if (sp.getBoolean("${it.name}Check", true)) {
+                        try {
+                            Log.d("Service", "Request")
+                            val tr = Thread {
+                                simpleGetRequest("https://tracker.gg/valorant/profile/riot/${encodeString(name)}/overview?season=all?playlist=${it.type}")
+                                response = getMatches(name, it.type)
+                            }
+                            tr.start()
+                            withContext(Dispatchers.IO) {
+                                tr.join(1000 * 10)
                             }
 
-                            if (lastID != firstID) {
-                                var gamesCount = 0
-                                var found = false
-                                var wins = 0
+                            if (JSONObject(response).isNull("errors")) {
+                                val matches =
+                                    JSONObject(response).getJSONObject("data").getJSONArray("matches")
 
-                                if (matches.length() != 0) {
-                                    for (i in 0 until matches.length()) {
-                                        val curID =
-                                            matches.getJSONObject(i).getJSONObject("attributes")
-                                                .getString("id")
-                                        if (curID == lastID) {
-                                            found = true
-                                            break
-                                        } else {
-                                            gamesCount++
-                                            gamesSummary++
-                                        }
-                                        if (matches.getJSONObject(i).getJSONObject("metadata")
-                                                .getString("result") == "victory"
-                                        ) {
-                                            wins++
-                                            winsSummary++
-                                        }
-                                    }
+                                val firstID = if (matches.length()>0) {
+                                    matches.getJSONObject(0).getJSONObject("attributes").getString("id")
+                                } else {
+                                    lastID
+                                }
 
-                                    if (!found && gamesCount==20) {
-                                        more = true
+                                if (lastID != firstID) {
+                                    var gamesCount = 0
+                                    var found = false
+                                    var wins = 0
+
+                                    if (matches.length() != 0) {
+                                        for (i in 0 until matches.length()) {
+                                            val curID =
+                                                matches.getJSONObject(i).getJSONObject("attributes")
+                                                    .getString("id")
+                                            if (curID == lastID) {
+                                                found = true
+                                                break
+                                            } else {
+                                                gamesCount++
+                                                gamesSummary++
+                                            }
+                                            if (matches.getJSONObject(i).getJSONObject("metadata")
+                                                    .getString("result") == "victory"
+                                            ) {
+                                                wins++
+                                                winsSummary++
+                                            }
+                                        }
+
+                                        if (!found && gamesCount==20) {
+                                            more = true
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                    } catch (ex: Exception) {
-                        errorsSummary++
-                        ex.printStackTrace()
+                        } catch (ex: Exception) {
+                            errorsSummary++
+                            ex.printStackTrace()
+                        }
                     }
                 }
 
@@ -112,6 +118,8 @@ class CheckGames : Service() {
                     } else {
                         SendNotification("Замечена активность! (>$gamesSummary игр; ${(winsSummary * 100 / gamesSummary)}% побед) ($errorsSummary ошибок)")
                     }
+                } else if (sp.getBoolean("showFailCheck", false)) {
+                    SendNotification("Никаких изменений ($errorsSummary ошибок)")
                 }
             }
         }

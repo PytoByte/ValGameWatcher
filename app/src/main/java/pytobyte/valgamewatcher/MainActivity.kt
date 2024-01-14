@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,7 +70,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val showingText = mutableStateOf("")
-        check(showingText, this, true)
+        startService(Intent(this, CheckGames::class.java))
 
 
         setContent {
@@ -167,9 +168,7 @@ class MainActivity : ComponentActivity() {
                                         item {
                                             Column {
                                                 Text(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    text = "Интервал запросов в мин (0 для откл)",
-                                                    textAlign = TextAlign.Center
+                                                    text = "Интервал запросов в мин (0 для откл)"
                                                 )
                                                 val checkInterval = remember {
                                                     mutableStateOf(
@@ -225,15 +224,8 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                         itemsIndexed(Gamemodes.values()) { index, item ->
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                val checkState = remember {
-                                                    mutableStateOf(
-                                                        sp.getBoolean(
-                                                            "${item.name}Check",
-                                                            true
-                                                        )
-                                                    )
-                                                }
+                                            val checkState = remember { mutableStateOf(sp.getBoolean("${item.name}Check", true))}
+                                            Row(modifier=Modifier.clickable { checkState.value = !checkState.value }, verticalAlignment = Alignment.CenterVertically) {
                                                 Checkbox(
                                                     checked = checkState.value,
                                                     onCheckedChange = {
@@ -260,8 +252,7 @@ class MainActivity : ComponentActivity() {
 
     fun check(
         showingText: MutableState<String>,
-        activity: ComponentActivity,
-        start: Boolean = false
+        activity: ComponentActivity
     ) {
         Thread {
             Log.d("Thread", "call")
@@ -361,10 +352,6 @@ class MainActivity : ComponentActivity() {
                     sb.appendLine("\n${gamesSummary} Суммарно ${(winsSummary * 100 / gamesSummary)}% побед (${errorsSummary} ошибок)")
                 }
                 showingText.value = sb.toString()
-            }
-
-            if (start) {
-                activity.startService(Intent(activity, CheckGames::class.java))
             }
 
         }.start()

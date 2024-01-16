@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
+import io.ktor.client.statement.HttpResponse
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import pytobyte.valgamewatcher.R
 import pytobyte.valgamewatcher.data.Gamemodes
@@ -201,14 +203,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                         item {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                val checkState = remember {
-                                                    mutableStateOf(
-                                                        sp.getBoolean(
-                                                            "showFailCheck",
-                                                            false
-                                                        )
-                                                    )
-                                                }
+                                                val checkState = remember { mutableStateOf(sp.getBoolean("showFailCheck", false)) }
                                                 Checkbox(
                                                     checked = checkState.value,
                                                     onCheckedChange = {
@@ -225,7 +220,7 @@ class MainActivity : ComponentActivity() {
                                         }
                                         itemsIndexed(Gamemodes.values()) { index, item ->
                                             val checkState = remember { mutableStateOf(sp.getBoolean("${item.name}Check", true))}
-                                            Row(modifier=Modifier.clickable { checkState.value = !checkState.value }, verticalAlignment = Alignment.CenterVertically) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Checkbox(
                                                     checked = checkState.value,
                                                     onCheckedChange = {
@@ -274,8 +269,10 @@ class MainActivity : ComponentActivity() {
                     try {
                         val lastID = sp.getString("${it.name}lastID", "0")!!
 
-                        simpleGetRequest("https://tracker.gg/valorant/profile/riot/${encodeString(name)}/overview?season=all?playlist=${it.type}")
-                        val response = getMatches(name, it.type)
+                        val response: String
+                        runBlocking {
+                            response = getMatches(name, it.type)
+                        }
                         if (JSONObject(response).isNull("errors")) {
                             val matches =
                                 JSONObject(response).getJSONObject("data").getJSONArray("matches")

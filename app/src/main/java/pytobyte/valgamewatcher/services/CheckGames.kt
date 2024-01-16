@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import pytobyte.valgamewatcher.R
@@ -54,13 +55,9 @@ class CheckGames : Service() {
                     if (sp.getBoolean("${it.name}Check", true)) {
                         try {
                             Log.d("Service", "Request")
-                            val tr = Thread {
-                                simpleGetRequest("https://tracker.gg/valorant/profile/riot/${encodeString(name)}/overview?season=all?playlist=${it.type}")
+
+                            runBlocking {
                                 response = getMatches(name, it.type)
-                            }
-                            tr.start()
-                            withContext(Dispatchers.IO) {
-                                tr.join(1000 * 10)
                             }
 
                             if (JSONObject(response).isNull("errors")) {
